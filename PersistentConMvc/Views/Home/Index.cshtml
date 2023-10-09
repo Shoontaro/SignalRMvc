@@ -1,0 +1,82 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <h2>Чат</h2>
+
+    <div id="loginBlock">
+        Введите логин:<br />
+        <input id="txtUserName" type="text" />
+        <input id="btnLogin" type="button" value="Войти" />
+    </div>
+    <div id="chatBody">
+
+        <div id="header"></div>
+
+        <div id="inputForm">
+            <input type="text" id="message" />
+            <input type="button" id="sendmessage" value="Отправить" />
+        </div>
+
+        <div id="chatroom">
+            <ul></ul>
+        </div>
+
+    </div>
+    <input id="username" type="hidden" />
+
+    <script src="~/Scripts/jquery-3.4.1.min.js"></script>
+    <!--Ссылка на библиотеку SignalR -->
+    <script src="~/Scripts/jquery.signalR-2.4.3.min.js"></script>
+    <script>
+        $(function () {
+
+            $('#chatBody').hide();
+            // получаем соединение
+            var myConnection = $.connection("/chat");
+            // обработка получения данных от сервера
+            myConnection.received(function (data) {
+                $("#chatroom ul").append("<li><strong>" + htmlEncode(data.Name) +
+                    '</strong>: ' + htmlEncode(data.Message) + "</li>");
+            });
+
+                // обработка логина
+                $("#btnLogin").click(function () {
+
+                    var userName = $("#txtUserName").val().replace(/\s/g, '');
+                    if (userName.length > 0) {
+                        $('#username').val(userName);
+
+                        //отключаем поля ввода логина
+                        $('#btnLogin').attr('disabled', 'disabled');
+                        $('#txtUserName').attr('disabled', 'disabled');
+
+                        $('#chatBody').show();
+                        // открываем соединение
+                        myConnection.start().done(function () {
+                            //обработчик отправки сообщения
+                            $('#sendmessage').click(function () {
+                               // посылаем сериализованный объект на сервер
+                                myConnection.send(JSON.stringify({ name: $('#username').val(), message: $('#message').val() }));
+                                $('#message').val('');
+                            });
+                        });
+                    }
+                    else {
+                        alert("Введите имя");
+                    }
+                });
+         });
+        // Кодирование тегов
+        function htmlEncode(value) {
+            var encodedValue = $('<div />').text(value).html();
+            return encodedValue;
+        }
+    </script>
+</body>
+</html>
